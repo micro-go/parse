@@ -14,7 +14,8 @@ Example:
 	for a, err := token.Next(); err == nil; a, err = token.Next() {
 		switch a {
 		}
-	}```
+	}
+```
 	
 Matching is used to match two strings. It currently supports MQTT rules.
 
@@ -25,4 +26,5 @@ Example:
 	m := NewMqttStringMatch(pattern)
 	if m.Matches(cmp) {
 		// success
-	}```
+	}
+```
