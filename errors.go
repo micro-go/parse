@@ -5,5 +5,10 @@ import (
 )
 
 var (
-	emptyErr = errors.New("Token empty")
+	badRequestErr              = errors.New("Bad request")
+	emptyErr              = errors.New("Token empty")
+	invalidExtractRuleErr = errors.New("Invalid ExtractRule")
+	invalidRuleErr        = errors.New("Invalid rule")
+	ruleMismatchErr       = errors.New("Rule mismatch")
+	stringMismatchErr     = errors.New("String mismatch")
 )
