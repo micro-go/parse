@@ -6,6 +6,7 @@ package parse
 import (
 	"encoding/json"
 	"io/ioutil"
+	"strconv"
 	"strings"
 )
 
@@ -34,6 +35,30 @@ func TreeBool(path string, root interface{}, defaultValue bool) bool {
 		return v > 0
 	case string:
 		return len(v) > 0 && v[0] == 'T' || v[0] == 't'
+	}
+	return defaultValue
+}
+
+func TreeInt(path string, root interface{}, defaultValue int) int {
+	_v, err := TreeValue(path, root)
+	if err != nil {
+		return defaultValue
+	}
+	switch v := _v.(type) {
+	case bool:
+		if v {
+			return 1
+		}
+		return 0
+	case float64:
+		return int(v)
+	case int:
+		return v
+	case string:
+		i, err := strconv.Atoi(v)
+		if err == nil {
+			return i
+		}
 	}
 	return defaultValue
 }
