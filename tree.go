@@ -74,6 +74,24 @@ func TreeString(path string, root interface{}, defaultValue string) string {
 	return defaultValue
 }
 
+func TreeStringSlice(path string, root interface{}) []string {
+	_v, err := TreeValue(path, root)
+	if err != nil {
+		return nil
+	}
+	v, ok := _v.([]interface{})
+	if !ok {
+		return nil
+	}
+	var ans []string
+	for _, _value := range v {
+		if value, ok := _value.(string); ok {
+			ans = append(ans, value)
+		}
+	}
+	return ans
+}
+
 func TreeValue(_path string, _root interface{}) (interface{}, error) {
 	root, ok := _root.(map[string]interface{})
 	if !ok {
