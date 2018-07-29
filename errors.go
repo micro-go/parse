@@ -13,4 +13,5 @@ var (
 	noMapErr              = errors.New("No map")
 	ruleMismatchErr       = errors.New("Rule mismatch")
 	stringMismatchErr     = errors.New("String mismatch")
+	treeErr               = errors.New("Unknown tree error")
 )

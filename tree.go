@@ -10,6 +10,12 @@ import (
 	"strings"
 )
 
+type treeSetFunc func(key string, parent map[string]interface{}) error
+
+const (
+	TreeSeparator = "/"
+)
+
 func ReadJsonFile(filename string) (interface{}, error) {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -40,38 +46,19 @@ func TreeBool(path string, root interface{}, defaultValue bool) bool {
 }
 
 func TreeInt(path string, root interface{}, defaultValue int) int {
-	_v, err := TreeValue(path, root)
-	if err != nil {
+	v, ok := FindTreeInt(path, root)
+	if !ok {
 		return defaultValue
 	}
-	switch v := _v.(type) {
-	case bool:
-		if v {
-			return 1
-		}
-		return 0
-	case float64:
-		return int(v)
-	case int:
-		return v
-	case string:
-		i, err := strconv.Atoi(v)
-		if err == nil {
-			return i
-		}
-	}
-	return defaultValue
+	return v
 }
 
 func TreeString(path string, root interface{}, defaultValue string) string {
-	_v, err := TreeValue(path, root)
-	if err != nil {
+	v, ok := FindTreeString(path, root)
+	if !ok {
 		return defaultValue
 	}
-	if v, ok := _v.(string); ok {
-		return v
-	}
-	return defaultValue
+	return v
 }
 
 func TreeStringSlice(path string, root interface{}) []string {
@@ -92,13 +79,65 @@ func TreeStringSlice(path string, root interface{}) []string {
 	return ans
 }
 
-func TreeValue(_path string, _root interface{}) (interface{}, error) {
-	root, ok := _root.(map[string]interface{})
+func TreeValue(path string, tree interface{}) (interface{}, error) {
+	v, ok := FindTreeValue(path, tree)
 	if !ok {
-		return nil, badRequestErr
+		return nil, noValueErr
 	}
-	path := strings.Split(_path, "/")
-	return findTreeValue(path, root)
+	return v, nil
+}
+
+// FindTreeInt() finds the value at the given path and answers it
+// as an int, if it's convertible.
+func FindTreeInt(path string, root interface{}) (int, bool) {
+	_v, err := TreeValue(path, root)
+	if err != nil {
+		return 0, false
+	}
+	switch v := _v.(type) {
+	case bool:
+		if v {
+			return 1, true
+		}
+		return 0, true
+	case float64:
+		return int(v), true
+	case int:
+		return v, true
+	case string:
+		i, err := strconv.Atoi(v)
+		if err == nil {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
+// FindTreeString() func follows a path down an arbitrary object to answer
+// a string at the root. The path is "/" separated to enter maps.
+// Note: This is identical to TreeString(), but I'm acknowledging, for
+// all the convenience of that API in certain situations, I should have
+// stuck to a more go-way of doing things.
+func FindTreeString(path string, root interface{}) (string, bool) {
+	_v, err := TreeValue(path, root)
+	if err != nil {
+		return "", false
+	}
+	v, ok := _v.(string)
+	return v, ok
+}
+
+func FindTreeValue(_path string, _tree interface{}) (interface{}, bool) {
+	tree, ok := _tree.(map[string]interface{})
+	if !ok {
+		return nil, false
+	}
+	path := strings.Split(_path, TreeSeparator)
+	v, err := findTreeValue(path, tree)
+	if err == nil {
+		return v, true
+	}
+	return nil, false
 }
 
 func findTreeValue(path []string, root map[string]interface{}) (interface{}, error) {
@@ -116,4 +155,57 @@ func findTreeValue(path []string, root map[string]interface{}) (interface{}, err
 		return findTreeValue(path[1:], root)
 	}
 	return nil, noMapErr
+}
+
+func SetTreeInt(path string, value int, tree interface{}) (interface{}, error) {
+	fn := func(key string, parent map[string]interface{}) error {
+		parent[key] = value
+		return nil
+	}
+	return setTreeValue(path, tree, fn)
+}
+
+func SetTreeString(path, value string, tree interface{}) (interface{}, error) {
+	fn := func(key string, parent map[string]interface{}) error {
+		parent[key] = value
+		return nil
+	}
+	return setTreeValue(path, tree, fn)
+}
+
+func setTreeValue(path string, tree interface{}, fn treeSetFunc) (interface{}, error) {
+	if path == "" {
+		return tree, badRequestErr
+	}
+	names := strings.Split(path, TreeSeparator)
+	if tree == nil {
+		tree = make(map[string]interface{})
+	}
+	return tree, setTreeValueOn(names, tree, fn)
+}
+
+func setTreeValueOn(path []string, tree interface{}, fn treeSetFunc) error {
+	if len(path) < 1 || path[0] == "" {
+		return badRequestErr
+	}
+	// This is an error condition that should never happen
+	if tree == nil {
+		return treeErr
+	}
+	switch t := tree.(type) {
+	case map[string]interface{}:
+		if len(path) > 1 {
+			c, ok := t[path[0]]
+			if c == nil || !ok {
+				c = make(map[string]interface{})
+				t[path[0]] = c
+			}
+			return setTreeValueOn(path[1:], c, fn)
+		} else {
+			return fn(path[0], t)
+		}
+	default:
+		// Currently only support maps as containers
+		return badRequestErr
+	}
 }
