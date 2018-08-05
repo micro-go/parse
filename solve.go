@@ -18,19 +18,13 @@ func SolveInt(s string) (int, error) {
 	// Extract. Try both float and int
 	vi := constant.ToInt(tv.Value)
 	if vi.Kind() == constant.Int {
-		i, ok := constant.Int64Val(vi)
-		if !ok {
-			return 0, errors.New("Unsolvable: " + s)
-		}
+		i, _ := constant.Int64Val(vi)
 		return int(i), nil
 	}
 
 	vf := constant.ToFloat(tv.Value)
 	if vf.Kind() == constant.Float {
-		f, ok := constant.Float64Val(vf)
-		if !ok {
-			return 0, errors.New("Unsolvable: " + s)
-		}
+		f, _ := constant.Float64Val(vf)
 		return int(f), nil
 	}
 
