@@ -8,6 +8,8 @@ import (
 
 // ReplacePairs() takes a string and applies a series of replace pairs.
 // For each pair in the arguments, the first value is found and replaced with the second.
+// The second argument can be anything that can reduce down to a string, including
+// a function with no arguments that returns a string.
 func ReplacePairs(s string, pairs ...interface{}) string {
 	even := true
 	var last interface{}
@@ -36,6 +38,8 @@ func tostring(i interface{}) (string, error) {
 		return t, nil
 	case int:
 		return strconv.Itoa(t), nil
+	case func() string:
+		return t(), nil
 	}
 	// Fallback
 	return fmt.Sprintf("%v", i), nil
