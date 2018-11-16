@@ -1,103 +1,63 @@
 package parse
 
 import (
+	"fmt"
 	"testing"
 )
 
-// No wildcards
+func TestMatchAccept(t *testing.T) {
+	cases := []struct {
+		Pattern string
+		Match   string
+	}{
+		{"a", "a"},
+		{"a/b", "a/b"},
+		{"a/b/c", "a/b/c"},
 
-func TestMatch1(t *testing.T) {
-	testMqttAccept(t, "a", "a")
-}
+		{"a/+", "a/a"},
+		{"a/+", "a/b"},
+		{"a/+/c", "a/a/c"},
 
-func TestMatch2(t *testing.T) {
-	testMqttAccept(t, "a/b", "a/b")
-}
-
-func TestMatch3(t *testing.T) {
-	testMqttAccept(t, "a/b/c", "a/b/c")
-}
-
-func TestMatch4(t *testing.T) {
-	testMqttDecline(t, "a", "b")
-}
-
-func TestMatch5(t *testing.T) {
-	testMqttDecline(t, "a/a", "b")
-}
-
-func TestMatch6(t *testing.T) {
-	testMqttDecline(t, "a/a", "a")
-}
-
-func TestMatch7(t *testing.T) {
-	testMqttDecline(t, "a", "a/b")
-}
-
-// Single-level wildcards
-
-func TestMatch8(t *testing.T) {
-	testMqttAccept(t, "a/+", "a/a")
-}
-
-func TestMatch9(t *testing.T) {
-	testMqttAccept(t, "a/+", "a/b")
-}
-
-func TestMatch10(t *testing.T) {
-	testMqttDecline(t, "a/+", "a/b/c")
-}
-
-func TestMatch11(t *testing.T) {
-	testMqttAccept(t, "a/+/c", "a/a/c")
-}
-
-func TestMatch12(t *testing.T) {
-	testMqttDecline(t, "a/+/c", "a/a")
-}
-
-func TestMatch13(t *testing.T) {
-	testMqttDecline(t, "a/+/c", "a/a/d")
-}
-
-// Multi-level wildcards
-
-func TestMatch14(t *testing.T) {
-	testMqttDecline(t, "a/#/c", "a/a/d")
-}
-
-func TestMatch15(t *testing.T) {
-	testMqttDecline(t, "a/#/c", "a/a/b/d")
-}
-
-func TestMatch16(t *testing.T) {
-	testMqttDecline(t, "a/#/c", "a/a/c/d")
-}
-
-func TestMatch17(t *testing.T) {
-	testMqttAccept(t, "a/#", "a/a/d")
-}
-
-func TestMatch18(t *testing.T) {
-	testMqttAccept(t, "a/#/d", "a/a/d")
-}
-
-func TestMatch19(t *testing.T) {
-	testMqttAccept(t, "a/#/d", "a/a/b/c/d")
-}
-
-// Helpers
-
-func testMqttAccept(t *testing.T, pattern, cmp string) {
-	m := NewMqttStringMatch(pattern)
-	if !m.Matches(cmp) {
-		t.Fail()
+		{"a/#", "a/a/d"},
+		{"a/#/d", "a/a/d"},
+		{"a/#/d", "a/a/b/c/d"},
+	}
+	for i, tc := range cases {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			m := NewMqttStringMatch(tc.Pattern)
+			if !m.Matches(tc.Match) {
+				fmt.Println("accept case", i, tc.Pattern, "should match to", tc.Match)
+				t.Fatal()
+			}
+		})
 	}
 }
 
-func testMqttDecline(t *testing.T, pattern, cmp string) {
-	m := NewMqttStringMatch(pattern)
-	if m.Matches(cmp) {
-		t.Fail()
+func TestMatchDecline(t *testing.T) {
+	cases := []struct {
+		Pattern string
+		Match   string
+	}{
+		{"a", "b"},
+		{"a/a", "b"},
+		{"a/a", "a"},
+		{"a", "a/b"},
+
+		{"a/+", "a/b/c"},
+		{"a/+/c", "a/a"},
+		{"a/+/c", "a/a/d"},
+
+		{"a/#/c", "a/a/d"},
+		{"a/#/c", "a/a/b/d"},
+		{"a/#/c", "a/a/c/d"},
+	}
+	for i, tc := range cases {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			m := NewMqttStringMatch(tc.Pattern)
+			if m.Matches(tc.Match) {
+				fmt.Println("decline case", i, tc.Pattern, "should not match to", tc.Match)
+				t.Fatal()
+			}
+		})
 	}
 }
