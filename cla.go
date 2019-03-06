@@ -28,8 +28,13 @@ type cla_builder struct {
 func (b *cla_builder) push(r rune) {
 	c := string(r)
 	if b.in_quote {
-		if b.last_char == `\` && c == `"` {
-			b.cur += c
+		if b.last_char == `\` {
+			if c == `"` {
+				b.cur += c
+			} else {
+				b.cur += b.last_char
+				b.cur += c
+			}
 		} else if c == `"` {
 			b.flush()
 			b.in_quote = false
@@ -51,8 +56,14 @@ func (b *cla_builder) push(r rune) {
 
 func (b *cla_builder) flush() {
 	if len(b.cur) > 0 {
+		b.cur = claEscape(b.cur)
 		b.ans = append(b.ans, b.cur)
 		b.cur = ""
 	}
 	b.in_quote = false
+}
+
+// claEscape returns the string with all characters escaped
+func claEscape(s string) string {
+	return s
 }

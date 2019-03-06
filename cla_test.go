@@ -5,39 +5,24 @@ import (
 	"testing"
 )
 
-func TestAsArguments1(t *testing.T) {
-	cla := "parse it all"
-	testArgAccept(t, cla, []string{"parse", "it", "all"})
-}
-
-func TestAsArguments2(t *testing.T) {
-	cla := `parse "it" all`
-	testArgAccept(t, cla, []string{"parse", "it", "all"})
-}
-
-func TestAsArguments3(t *testing.T) {
-	cla := `parse "yo momma" all`
-	testArgAccept(t, cla, []string{"parse", "yo momma", "all"})
-}
-
-func TestAsArguments4(t *testing.T) {
-	cla := `parse "yo \"momma\"" all`
-	testArgAccept(t, cla, []string{"parse", `yo "momma"`, "all"})
-}
-
-// Helpers
-
-func testArgAccept(t *testing.T, src string, a []string) {
-	b := AsArguments(src)
-	if arraysMatch(a, b) == false {
-		fmt.Println("No match a", a, "b", b)
-		t.Fail()
+func TestAsArguments(t *testing.T) {
+	cases := []struct {
+		From string
+		Want []string
+	}{
+		{"parse it all", []string{"parse", "it", "all"} },
+		{`parse "it" all`, []string{"parse", "it", "all"} },
+		{`parse "yo momma" all`, []string{"parse", "yo momma", "all"} },
+		{`parse "yo \"momma\"" all`, []string{"parse", `yo "momma"`, "all"} },
+		{`parse "path\to\file"`, []string{"parse", `path\to\file`} },
 	}
-}
-
-func testArgsDecline(t *testing.T, src string, a []string) {
-	b := AsArguments(src)
-	if arraysMatch(a, b) == true {
-		t.Fail()
+	for i, tc := range cases {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			have := AsArguments(tc.From)
+			if arraysMatch(have, tc.Want) == false {
+				fmt.Println("No match have", have, "b", tc.Want)
+				t.Fail()
+			}
+		})
 	}
 }
