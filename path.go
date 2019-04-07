@@ -53,6 +53,24 @@ func Extract(src []string, rules ...interface{}) ([]string, error) {
 	return resp, nil
 }
 
+// func ExtractOne() extracts a single item. There's no error reporting, if you
+// need more complete information use a more complex form.
+func ExtractOne(path string, opts ExtractOpts, rules ...interface{}) string {
+	if opts.Separator == "" {
+		return ""
+	}
+	all := strings.Split(path, opts.Separator)
+	ext, err := Extract(all, rules...)
+	if err != nil || len(ext) < 1 {
+		return ""
+	}
+	return ext[0]
+}
+
+type ExtractOpts struct {
+	Separator string
+}
+
 type ExtractRule int
 
 const (

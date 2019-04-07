@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestPathAccept(t *testing.T) {
+func TestPathExtractSepAccept(t *testing.T) {
 	cases := []struct {
 		Path  string
 		Rules []interface{}
@@ -32,7 +32,7 @@ func TestPathAccept(t *testing.T) {
 	}
 }
 
-func TestPathDecline(t *testing.T) {
+func TestPathExtractSepDecline(t *testing.T) {
 	cases := []struct {
 		Path  string
 		Rules []interface{}
@@ -44,6 +44,29 @@ func TestPathDecline(t *testing.T) {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			have, err := ExtractSep(tc.Path, "/", tc.Rules...)
 			if err == nil && arraysMatch(tc.Want, have) == true {
+				t.Fail()
+			}
+		})
+	}
+}
+
+func TestPathExtractOne(t *testing.T) {
+	cases := []struct {
+		Path  string
+		Rules []interface{}
+		Want  string
+	}{
+		{"a", []interface{}{KeepRule}, "a"},
+		{"a", []interface{}{SkipRule}, ""},
+		{"a/b", []interface{}{KeepRule, KeepRule}, "a"},
+		{"a/b", []interface{}{SkipRule, KeepRule}, "b"},
+	}
+	for i, tc := range cases {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			opts := ExtractOpts{Separator: "/"}
+			have := ExtractOne(tc.Path, opts, tc.Rules...)
+			if have != tc.Want {
+				fmt.Println("Mismtach have", have, "want", tc.Want)
 				t.Fail()
 			}
 		})
