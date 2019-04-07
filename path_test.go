@@ -5,44 +5,52 @@ import (
 	"testing"
 )
 
-func TestPath1(t *testing.T) {
-	topic := "bub/1/a/b/c"
-	testPathAccept(t, topic, []string{"bub", "c"}, KeepRule, "1", "a", "b", KeepRule)
+func TestPathAccept(t *testing.T) {
+	cases := []struct {
+		Path  string
+		Rules []interface{}
+		Want  []string
+	}{
+		{"a/b", []interface{}{KeepRule, KeepRule}, []string{"a", "b"}},
+		{"a/b/c", []interface{}{KeepRule, KeepRule}, []string{"a", "b"}},
+		{"a/b/c", []interface{}{KeepRule, KeepRule, SkipRule}, []string{"a", "b"}},
+		{"a/b/c", []interface{}{KeepRule, SkipRule, KeepRule}, []string{"a", "c"}},
+		{"bub/1/a/b/c", []interface{}{KeepRule, "1", "a", "b", KeepRule}, []string{"bub", "c"}},
+		{"/bub/1/a/b/c", []interface{}{KeepRule, "1", "a", "b", KeepRule}, []string{"bub", "c"}},
+		{"bub/1/a/b/c", []interface{}{SkipRule, "1", "a", "b", KeepRule}, []string{"c"}},
+	}
+	for i, tc := range cases {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			have, err := ExtractSep(tc.Path, "/", tc.Rules...)
+			if err != nil {
+				fmt.Println(err)
+				t.Fail()
+			} else if arraysMatch(tc.Want, have) == false {
+				t.Fail()
+			}
+		})
+	}
 }
 
-func TestPath2(t *testing.T) {
-	topic := "/bub/1/a/b/c"
-	testPathAccept(t, topic, []string{"bub", "c"}, KeepRule, "1", "a", "b", KeepRule)
-}
-
-func TestPath3(t *testing.T) {
-	topic := "bub/1/a/b/c"
-	testPathAccept(t, topic, []string{"c"}, SkipRule, "1", "a", "b", KeepRule)
-}
-
-func TestPath4(t *testing.T) {
-	topic := "bub/1/a/b/c"
-	testPathDecline(t, topic, []string{"c"}, "plus", "1", "a", "b", KeepRule)
+func TestPathDecline(t *testing.T) {
+	cases := []struct {
+		Path  string
+		Rules []interface{}
+		Want  []string
+	}{
+		{"bub/1/a/b/c", []interface{}{"plus", "1", "a", "b", KeepRule}, []string{"c"}},
+	}
+	for i, tc := range cases {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			have, err := ExtractSep(tc.Path, "/", tc.Rules...)
+			if err == nil && arraysMatch(tc.Want, have) == true {
+				t.Fail()
+			}
+		})
+	}
 }
 
 // Helpers
-
-func testPathAccept(t *testing.T, path string, answers []string, rules ...interface{}) {
-	ra, err := ExtractSep(path, "/", rules...)
-	if err != nil {
-		fmt.Println(err)
-		t.Fail()
-	} else if arraysMatch(answers, ra) == false {
-		t.Fail()
-	}
-}
-
-func testPathDecline(t *testing.T, path string, answers []string, rules ...interface{}) {
-	ra, err := ExtractSep(path, "/", rules...)
-	if err == nil && arraysMatch(answers, ra) == true {
-		t.Fail()
-	}
-}
 
 func arraysMatch(a []string, b []string) bool {
 	if len(a) != len(b) {
